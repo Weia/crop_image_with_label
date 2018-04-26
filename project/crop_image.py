@@ -6,6 +6,7 @@
 import numpy as np
 import os
 from PIL import Image
+import csv
 import matplotlib.pyplot as plt
 def _open_label_file(label_file):
 
@@ -53,8 +54,10 @@ def _crop_image(img_dir,imgName,label):
 
 
         part_image=img.crop((x_min,y_min,x_max,y_max))
-
-
+        # plt.imshow(part_image)
+        # plt.plot(label[:,0],label[:,1])
+        # plt.show()
+        #
         return part_image,label
 
 def _save_img_label(img,imgName,path,label):
@@ -90,14 +93,45 @@ def crop_image_use_label(img_dir,label_file,position,save_path):
         if index>50:
             break
 
-# with open(r'D:\数据集\数据集\parts-images\head\head_label.txt') as f:
+
+def _open_csv_file(label_file_path):
+    f=open(label_file_path)
+    content=csv.reader(f)
+    return content
+
+
+def _parse_tc_line(line,posi):
+    img_relative_path=line[0]
+    posi_labels=[line[x] for x in posi]
+    x_y_labels=np.asarray([x.split('_')[:-1] for x in posi_labels]).astype(np.float32)
+    valid_labels=np.asarray([x if not np.array_equal(x,[-1.0,-1.0]) else [0.0,0.0] for x in x_y_labels]).reshape(-1,2)
+    #print(valid_labels)
+    return img_relative_path,valid_labels
+    pass
+
+
+def crop_tianchi_images(label_file_path,posi,save_image_path,img_dir):
+    file_content=_open_csv_file(label_file_path)
+    for index,line in enumerate(file_content):
+        print(index+1)
+        img_relative_path,labels=_parse_tc_line(line,posi)
+        try:
+            part_image,labels=_crop_image(img_dir,img_relative_path,labels)
+        except IndexError:
+            continue
+        imgName=img_relative_path.split('/')[-1]
+        _save_img_label(part_image,imgName,save_image_path,labels)
+    print('*'*20,'Done','*'*20)
+
+#
+# with open(r'D:\数据集\数据集\tianchi_part_image\blouse\blouse_label.txt') as f:
 #     content=f.readlines()
 #     for line in content:
 #         new=line.split(' ')
 #         name=new[0]
 #         label=new[1:-1]
 #         #print(name)
-#         img=Image.open(r'D:\数据集\数据集\parts-images\head'+'\\'+name)
+#         img=Image.open(r'D:\数据集\数据集\tianchi_part_image\blouse'+'\\'+name)
 #         new_label=np.asarray([float(x) for x in label]).reshape(-1,2)
 #         plt.plot(new_label[:,0],new_label[:,-1],'r*')
 #
